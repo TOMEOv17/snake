@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNAKE</title>
+    <link rel="shortcut icon" href="snakeicon.png" type="image/x-icon">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        :root {
+            --appBg: #205e1a;
+            --snakeCol: #137547;
+            --gridCol: hsl(133, 86%, 53%);
+            --gridBord: #eeeeee;
+            --gridSize: 900px;
+            --gridShad: rgb(167, 167, 167);
+            --cellShad: rgb(75, 163, 75);
+            --evenCell: rgb(57, 196, 57);
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--appBg);
+            overflow: hidden;
+        }
+
+        #grid {
+            border-radius: 10px;
+            box-shadow: 0 0 70px var(--gridShad);
+            background-color: var(--gridCol);
+            border: 10px solid var(--gridBord);
+            position: relative;
+        }
+
+        #grid_cell {
+            box-shadow: inset 1px 1px 4px var(--cellShad);
+            background-color: var(--gridCol);
+            position: absolute;
+        }
+
+        #grid_cell:nth-child(even) {
+            background-color: var(--evenCell);
+        }
+
+        #snakeSegment {
+            background-image: url('./snakeText.jpg');
+        }
+
+        #apple {
+            background-image: url('./apple.png');
+        }
+
+        #snakeSegment,
+        #apple {
+            position: absolute;
+            background-size: contain;
+            border-radius: 5px;
+            transform: translate(10%, 10%);
+        }
+
+        #score {
+            margin-bottom: 40px;
+            color: white;
+            text-shadow: 0 0 30px var(--gridShad);
+        }
+    </style>
+</head>
+
+<body>
+    <h1 id="score">
+        Wynik: <span>0</span>
+    </h1>
+    <div id="grid">
+
+    </div>
+    <script>
+        const gridBox = document.getElementById("grid")
+        let gridSize = 20
+        let cellSize = 40
+        let gridCount = Math.pow(gridSize, 2)
+        let grid = []
+        let score = 0
+        let snake = [
+            { x: 10, y: 10 }
+        ];
+        let currentDirection = "right"
+        let food = {
+            x: 9,
+            y: 9
+        }
+
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                let cell = document.createElement('div')
+                cell.style.height = `${cellSize}px`
+                cell.style.width = `${cellSize}px`
+
+                cell.setAttribute("id", "grid_cell")
+                cell.style.top = i * cellSize + "px";
+                cell.style.left = j * cellSize + "px";
+
+                gridBox.appendChild(cell)
+                gridBox.style.height = `${gridSize * cellSize}px`
+                gridBox.style.width = `${gridSize * cellSize}px`
+            }
+        }
+
+        const generateFood = () => {
+            food.x = Math.floor(Math.random() * 20)
+            food.y = Math.floor(Math.random() * 20)
+            snake.forEach(segment => {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood()
+                }
+            })
+            let apple = document.createElement('div')
+            apple.setAttribute('id', 'apple')
+            apple.style.height = `${(5 / 6) * cellSize}px`
+            apple.style.width = `${(5 / 6) * cellSize}px`
+            apple.style.top = food.y * cellSize + "px";
+            apple.style.left = food.x * cellSize + "px";
+            gridBox.appendChild(apple)
+        }
+
+        const gameRender = () => {
+            document.querySelectorAll("#snakeSegment").forEach(segment => segment.remove())
+
+            snake.forEach(segment => {
+                let snakeSegment = document.createElement('div')
+                snakeSegment.setAttribute("id", "snakeSegment")
+                snakeSegment.style.height = `${(5 / 6) * cellSize}px`
+                snakeSegment.style.width = `${(5 / 6) * cellSize}px`
+                snakeSegment.style.top = segment.y * cellSize + "px";
+                snakeSegment.style.left = segment.x * cellSize + "px";
+
+                gridBox.appendChild(snakeSegment);
+            })
+        }
+        document.addEventListener("keydown", handleKeyDown);
+        function handleKeyDown(event) {
+            const key = event.key;
+            if (key === "ArrowUp" && currentDirection !== "down") {
+                currentDirection = "up";
+            } else if (key === "ArrowDown" && currentDirection !== "up") {
+                currentDirection = "down";
+            } else if (key === "ArrowLeft" && currentDirection !== "right") {
+                currentDirection = "left";
+            } else if (key === "ArrowRight" && currentDirection !== "left") {
+                currentDirection = "right";
+            }
+        }
+
+        function checkCollision(x, y) {
+            return snake.some(segment => segment.x === x && segment.y === y);
+        }
+
+        function endGame() {
+            alert(`Przegrałeś z wynikiem ${score} punkta(ów)`)
+            location.reload()
+        }
+
+        const moveSnake = () => {
+            const head = { x: snake[0].x, y: snake[0].y }
+            if (currentDirection === "up") {
+                if (head.y === 0) head.y = 20
+                head.y--;
+            } else if (currentDirection === "down") {
+                if (head.y === 19) head.y = -1
+                head.y++;
+            } else if (currentDirection === "left") {
+                if (head.x === 0) head.x = 20
+                head.x--;
+            } else if (currentDirection === "right") {
+                if (head.x === 19) head.x = -1
+                head.x++;
+            }
+            if (checkCollision(head.x, head.y)) endGame()
+            if (head.x === food.x && head.y === food.y) {
+                document.querySelector('#apple').remove()
+                generateFood()
+                score++
+                document.querySelector('span').textContent = score
+            } else {
+                snake.pop()
+            }
+            snake.unshift(head);
+            gameRender()
+        }
+        gameRender()
+        generateFood()
+        setInterval(moveSnake, 400);
+    </script>
+</body>
+
+</html>
